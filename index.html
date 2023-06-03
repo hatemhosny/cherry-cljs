@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cherry</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <script type="importmap">
+      {
+        "imports": {
+          "cherry-cljs/cljs.core.js": "https://cdn.jsdelivr.net/npm/cherry-cljs@0.0.3/cljs.core.js"
+        }
+      }
+    </script>
+    <script type="module">
+      var counter = 0;
+      const handleCompiled = (event) => {
+          const {worker, compiled} = event.data;
+          document.querySelector('#compiledCode').innerText = compiled;
+          document.querySelector('#info').innerText = 'Worker: ' + worker;
+          const encodedJs = encodeURIComponent(compiled);
+          const dataUri = 'data:text/javascript;charset=utf-8;eval=' + counter + ',' + encodedJs;
+          console.log(dataUri);
+          import(dataUri);
+        }
+
+      const esmWorker = new Worker('./worker.esm.js', {type: 'module'});
+      esmWorker.addEventListener('message', handleCompiled);
+
+      const umdWorker = new Worker('./worker.umd.js');
+      umdWorker.addEventListener('message', handleCompiled);
+
+      window.compileESM = () => {
+        counter = counter + 1;
+        let code = document.querySelector('#cljsCode').value;
+        esmWorker.postMessage(code);
+      }
+
+      window.compileUMD = () => {
+        counter = counter + 1;
+        let code = document.querySelector('#cljsCode').value;
+        umdWorker.postMessage(code);
+      }
+    </script>
+  </head>
+  <body>
+    <div style="float: right;">
+      <a href="https://gitHub.com/squint-cljs/cherry"><img src="https://img.shields.io/github/stars/squint-cljs/cherry.svg?style=social&label=Star"></a></div>
+    <div>
+
+      <div>
+        <textarea rows="7" cols="80" id="cljsCode">(ns demo
+(:require ["https://cdn.skypack.dev/canvas-confetti$default" :as confetti]))
+
+(defn go! []
+  (confetti))
+
+(go!)</textarea>
+      </div>
+      <div>
+        <button onClick="compileESM()">
+          Compile ESM!
+        </button>
+        <button onClick="compileUMD()">
+          Compile UMD!
+        </button>
+        <span id="info"></span>
+      </div>
+      <div>
+        <pre><code id="compiledCode"></code></pre>
+      </div>
+  </body>
+</html>
